@@ -1,126 +1,193 @@
-<script>
-  let riwayat = new Set();
-  let teksTerkunci = false;
-  let teksInputan = "";
-  let totalKemungkinan = 0;
-
-  // Fungsi menyimpan data ke localStorage
-  function simpanKeStorage() {
-    localStorage.setItem("riwayat", JSON.stringify([...riwayat]));
-    localStorage.setItem("teksInputan", teksInputan);
-    localStorage.setItem("teksTerkunci", teksTerkunci);
-    localStorage.setItem("totalKemungkinan", totalKemungkinan);
-  }
-
-  // Fungsi memuat data dari localStorage saat halaman dibuka
-  function muatDariStorage() {
-    const simpanRiwayat = JSON.parse(localStorage.getItem("riwayat") || "[]");
-    riwayat = new Set(simpanRiwayat);
-    teksInputan = localStorage.getItem("teksInputan") || "";
-    teksTerkunci = localStorage.getItem("teksTerkunci") === "true";
-    totalKemungkinan = parseInt(localStorage.getItem("totalKemungkinan")) || 0;
-
-    if (teksTerkunci) {
-      document.getElementById("inputText").value = teksInputan;
-      document.getElementById("inputText").disabled = true;
-      updateSisa();
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kali Style Randomizer Final</title>
+  <style>
+    body {
+      background-color: #0f0f0f;
+      color: #00ffcc;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
-  }
+    .container {
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+    h2 { color: #00ffff; margin-bottom: 20px; }
+    input, button {
+      width: 100%; padding: 12px; margin-top: 10px; border: none;
+      border-radius: 5px; font-size: 16px; box-sizing: border-box;
+    }
+    input {
+      background-color: #1a1a1a;
+      color: #00ffcc;
+      border: 1px solid #00ffcc;
+    }
+    button {
+      background-color: #005f5f;
+      color: #ffffff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover { background-color: #00aaaa; }
+    #outputText {
+      font-size: 20px;
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #1a1a1a;
+      border: 1px dashed #00ffcc;
+      word-wrap: break-word;
+    }
+    #pesan {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ff5555;
+    }
+    .info {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #cccccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Random Besar/Kecil Huruf</h2>
+    <input type="text" id="inputText" placeholder="Masukkan teks...">
+    <button onclick="kunciTeks()">Kunci Teks</button>
+    <button onclick="acakBesarKecil()">Acak Huruf</button>
+    <button onclick="salinTeks()">Copy</button>
+    <button onclick="resetTeks()">Reset Teks</button>
+    <p id="outputText"></p>
+    <div id="pesan"></div>
+    <div class="info" id="sisaKemungkinan"></div>
+  </div>
 
-  // Jalankan saat halaman selesai dimuat
-  window.addEventListener("DOMContentLoaded", () => {
-    muatDariStorage();
-  });
+  <script>
+    let riwayat = new Set();
+    let teksTerkunci = false;
+    let teksInputan = "";
+    let totalKemungkinan = 0;
 
-  function kunciTeks() {
-    const inputElem = document.getElementById("inputText");
-    const pesan = document.getElementById("pesan");
-    const input = inputElem.value;
-
-    if (!input) {
-      pesan.textContent = "Teks tidak boleh kosong.";
-      return;
+    function encodeHash(teks, riwayatArray) {
+      const encoded = btoa(JSON.stringify({ teks, riwayat: riwayatArray }));
+      location.hash = encoded;
     }
 
-    teksInputan = input;
-    teksTerkunci = true;
-    inputElem.disabled = true;
-    pesan.textContent = "Teks dikunci. Silakan mulai mengacak.";
-    totalKemungkinan = Math.pow(2, (input.match(/[a-zA-Z]/g) || []).length);
-    updateSisa();
-    simpanKeStorage(); // simpan setelah kunci
-  }
-
-  function acakBesarKecil() {
-    const output = document.getElementById("outputText");
-    const pesan = document.getElementById("pesan");
-
-    if (!teksTerkunci || !teksInputan) {
-      pesan.textContent = "Masukkan dan kunci teks terlebih dahulu.";
-      return;
-    }
-
-    if (riwayat.size >= totalKemungkinan) {
-      pesan.textContent = "Semua kombinasi huruf besar/kecil telah digunakan!";
-      return;
-    }
-
-    let hasilUnik = "";
-    let percobaan = 0;
-    do {
-      hasilUnik = "";
-      for (let i = 0; i < teksInputan.length; i++) {
-        const huruf = teksInputan[i];
-        hasilUnik += /[a-zA-Z]/.test(huruf)
-          ? (Math.random() < 0.5 ? huruf.toLowerCase() : huruf.toUpperCase())
-          : huruf;
+    function decodeHash() {
+      try {
+        const data = JSON.parse(atob(location.hash.substring(1)));
+        if (data.teks) {
+          teksInputan = data.teks;
+          teksTerkunci = true;
+          document.getElementById("inputText").value = teksInputan;
+          document.getElementById("inputText").disabled = true;
+          riwayat = new Set(data.riwayat || []);
+          totalKemungkinan = Math.pow(2, (teksInputan.match(/[a-zA-Z]/g) || []).length);
+          updateSisa();
+        }
+      } catch (e) {
+        // Kosong atau rusak, abaikan saja
       }
-      percobaan++;
-      if (percobaan > 1000) {
-        pesan.textContent = "Gagal menemukan kombinasi unik.";
+    }
+
+    function kunciTeks() {
+      const inputElem = document.getElementById("inputText");
+      const pesan = document.getElementById("pesan");
+      const input = inputElem.value;
+
+      if (!input) {
+        pesan.textContent = "Teks tidak boleh kosong.";
         return;
       }
-    } while (riwayat.has(hasilUnik));
 
-    riwayat.add(hasilUnik);
-    output.textContent = hasilUnik;
-    pesan.textContent = "";
-    updateSisa();
-    simpanKeStorage(); // simpan setiap kali kombinasi ditambahkan
-  }
+      teksInputan = input;
+      teksTerkunci = true;
+      inputElem.disabled = true;
+      pesan.textContent = "Teks dikunci. Silakan mulai mengacak.";
+      totalKemungkinan = Math.pow(2, (input.match(/[a-zA-Z]/g) || []).length);
+      encodeHash(teksInputan, Array.from(riwayat));
+      updateSisa();
+    }
 
-  function salinTeks() {
-    const teks = document.getElementById("outputText").textContent;
-    if (!teks) return;
-    navigator.clipboard.writeText(teks).then(() => {
-      alert("Teks berhasil disalin ke clipboard!");
-    }).catch(err => {
-      alert("Gagal menyalin: " + err);
-    });
-  }
+    function acakBesarKecil() {
+      const output = document.getElementById("outputText");
+      const pesan = document.getElementById("pesan");
 
-  function resetTeks() {
-    const inputElem = document.getElementById("inputText");
-    teksInputan = "";
-    teksTerkunci = false;
-    riwayat.clear();
-    totalKemungkinan = 0;
-    inputElem.disabled = false;
-    inputElem.value = "";
-    document.getElementById("outputText").textContent = "";
-    document.getElementById("pesan").textContent = "Teks berhasil direset.";
-    document.getElementById("sisaKemungkinan").textContent = "";
+      if (!teksTerkunci || !teksInputan) {
+        pesan.textContent = "Masukkan dan kunci teks terlebih dahulu.";
+        return;
+      }
 
-    // Hapus dari localStorage juga
-    localStorage.removeItem("riwayat");
-    localStorage.removeItem("teksInputan");
-    localStorage.removeItem("teksTerkunci");
-    localStorage.removeItem("totalKemungkinan");
-  }
+      if (riwayat.size >= totalKemungkinan) {
+        pesan.textContent = "Semua kombinasi huruf besar/kecil telah digunakan!";
+        return;
+      }
 
-  function updateSisa() {
-    const sisa = totalKemungkinan - riwayat.size;
-    document.getElementById("sisaKemungkinan").textContent =
-      `Sisa kombinasi unik: ${sisa} dari total ${totalKemungkinan}`;
-  }
-</script>
+      let hasilUnik = "";
+      let percobaan = 0;
+      do {
+        hasilUnik = "";
+        for (let i = 0; i < teksInputan.length; i++) {
+          const huruf = teksInputan[i];
+          hasilUnik += /[a-zA-Z]/.test(huruf)
+            ? (Math.random() < 0.5 ? huruf.toLowerCase() : huruf.toUpperCase())
+            : huruf;
+        }
+        percobaan++;
+        if (percobaan > 1000) {
+          pesan.textContent = "Gagal menemukan kombinasi unik.";
+          return;
+        }
+      } while (riwayat.has(hasilUnik));
+
+      riwayat.add(hasilUnik);
+      output.textContent = hasilUnik;
+      pesan.textContent = "";
+      encodeHash(teksInputan, Array.from(riwayat));
+      updateSisa();
+    }
+
+    function salinTeks() {
+      const teks = document.getElementById("outputText").textContent;
+      if (!teks) return;
+      navigator.clipboard.writeText(teks).then(() => {
+        alert("Teks berhasil disalin ke clipboard!");
+      }).catch(err => {
+        alert("Gagal menyalin: " + err);
+      });
+    }
+
+    function resetTeks() {
+      const inputElem = document.getElementById("inputText");
+      teksInputan = "";
+      teksTerkunci = false;
+      riwayat.clear();
+      totalKemungkinan = 0;
+      inputElem.disabled = false;
+      inputElem.value = "";
+      document.getElementById("outputText").textContent = "";
+      document.getElementById("pesan").textContent = "Teks berhasil direset.";
+      document.getElementById("sisaKemungkinan").textContent = "";
+      location.hash = "";
+    }
+
+    function updateSisa() {
+      const sisa = totalKemungkinan - riwayat.size;
+      document.getElementById("sisaKemungkinan").textContent =
+        `Sisa kombinasi unik: ${sisa} dari total ${totalKemungkinan}`;
+    }
+
+    // Jalankan saat halaman di-load
+    decodeHash();
+  </script>
+</body>
+</html>
