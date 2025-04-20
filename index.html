@@ -7,50 +7,82 @@
   <style>
     body {
       background-color: #0f0f0f;
-      color: #00ffcc;
-      font-family: 'Courier New', Courier, monospace;
+      color: #00b0ff;
+      font-family: 'San Francisco', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       margin: 0;
+      padding-top: 30px;
       display: flex;
       justify-content: center;
-      align-items: center;
-      min-height: 100vh;
     }
+
     .container {
       width: 90%;
       max-width: 400px;
       text-align: center;
     }
-    h2 { color: #00ffff; margin-bottom: 20px; }
-    input, button {
-      width: 100%; padding: 12px; margin-top: 10px; border: none;
-      border-radius: 5px; font-size: 16px; box-sizing: border-box;
+
+    h2 {
+      color: #00b0ff;
+      margin-bottom: 20px;
+      font-weight: bold;
     }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: bold;
+      box-sizing: border-box;
+    }
+
     input {
       background-color: #1a1a1a;
-      color: #00ffcc;
-      border: 1px solid #00ffcc;
+      color: #00b0ff;
+      border: 1px solid #00b0ff;
     }
+
     button {
-      background-color: #005f5f;
+      background-color: #005a6b; /* Tombol lebih gelap */
       color: #ffffff;
       font-weight: bold;
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    button:hover { background-color: #00aaaa; }
+
+    button:hover {
+      background-color: #00b0ff; /* Tombol akan berubah menjadi biru neon saat hover */
+    }
+
     #outputText {
       font-size: 20px;
       margin-top: 15px;
       padding: 10px;
       background-color: #1a1a1a;
-      border: 1px dashed #00ffcc;
+      border: 1px dashed #00b0ff;
       word-wrap: break-word;
+      min-height: 70px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      color: #00b0ff;
     }
+
+    #outputText:empty {
+      color: #00b0ff;
+      font-style: italic;
+      text-shadow: 0 0 5px #00b0ff; /* Placeholder shadow effect */
+    }
+
     #pesan {
       margin-top: 10px;
       font-size: 14px;
       color: #ff5555;
     }
+
     .info {
       margin-top: 10px;
       font-size: 14px;
@@ -60,20 +92,17 @@
 </head>
 <body>
   <div class="container">
-    <h2>Random Besar/Kecil Huruf</h2>
+    <h2>Randomizer</h2>
     <input type="text" id="inputText" placeholder="Masukkan teks...">
-    <button onclick="kunciTeks()">Kunci Teks</button>
     <button onclick="acakBesarKecil()">Acak Huruf</button>
-    <button onclick="salinTeks()">Copy</button>
-    <button onclick="resetTeks()">Reset Teks</button>
-    <p id="outputText"></p>
+    <button onclick="salinTeks()">Salin Hasil</button>
+    <p id="outputText">Hasil akan tampil di sini</p>
     <div id="pesan"></div>
     <div class="info" id="sisaKemungkinan"></div>
   </div>
 
   <script>
     let riwayat = new Set();
-    let teksTerkunci = false;
     let teksInputan = "";
     let totalKemungkinan = 0;
 
@@ -87,44 +116,29 @@
         const data = JSON.parse(atob(location.hash.substring(1)));
         if (data.teks) {
           teksInputan = data.teks;
-          teksTerkunci = true;
           document.getElementById("inputText").value = teksInputan;
-          document.getElementById("inputText").disabled = true;
           riwayat = new Set(data.riwayat || []);
           totalKemungkinan = Math.pow(2, (teksInputan.match(/[a-zA-Z]/g) || []).length);
           updateSisa();
         }
-      } catch (e) {
-        // Kosong atau rusak, abaikan saja
-      }
+      } catch (e) {}
     }
 
-    function kunciTeks() {
+    function acakBesarKecil() {
       const inputElem = document.getElementById("inputText");
+      const input = inputElem.value.trim();
+      const output = document.getElementById("outputText");
       const pesan = document.getElementById("pesan");
-      const input = inputElem.value;
 
       if (!input) {
         pesan.textContent = "Teks tidak boleh kosong.";
         return;
       }
 
-      teksInputan = input;
-      teksTerkunci = true;
-      inputElem.disabled = true;
-      pesan.textContent = "Teks dikunci. Silakan mulai mengacak.";
-      totalKemungkinan = Math.pow(2, (input.match(/[a-zA-Z]/g) || []).length);
-      encodeHash(teksInputan, Array.from(riwayat));
-      updateSisa();
-    }
-
-    function acakBesarKecil() {
-      const output = document.getElementById("outputText");
-      const pesan = document.getElementById("pesan");
-
-      if (!teksTerkunci || !teksInputan) {
-        pesan.textContent = "Masukkan dan kunci teks terlebih dahulu.";
-        return;
+      if (teksInputan !== input) {
+        teksInputan = input;
+        riwayat.clear();
+        totalKemungkinan = Math.pow(2, (teksInputan.match(/[a-zA-Z]/g) || []).length);
       }
 
       if (riwayat.size >= totalKemungkinan) {
@@ -166,27 +180,12 @@
       });
     }
 
-    function resetTeks() {
-      const inputElem = document.getElementById("inputText");
-      teksInputan = "";
-      teksTerkunci = false;
-      riwayat.clear();
-      totalKemungkinan = 0;
-      inputElem.disabled = false;
-      inputElem.value = "";
-      document.getElementById("outputText").textContent = "";
-      document.getElementById("pesan").textContent = "Teks berhasil direset.";
-      document.getElementById("sisaKemungkinan").textContent = "";
-      location.hash = "";
-    }
-
     function updateSisa() {
       const sisa = totalKemungkinan - riwayat.size;
       document.getElementById("sisaKemungkinan").textContent =
         `Sisa kombinasi unik: ${sisa} dari total ${totalKemungkinan}`;
     }
 
-    // Jalankan saat halaman di-load
     decodeHash();
   </script>
 </body>
